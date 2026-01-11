@@ -32,8 +32,8 @@ app.MapGet("/api/summary/{symbol}", async (string symbol, YahooFinanceClient cli
                 var highValues = g.Where(p => p.High.HasValue).Select(p => p.High!.Value).ToList();
                 var volumeValues = g.Where(p => p.Volume.HasValue).Select(p => p.Volume!.Value).ToList();
                 
-                var lowAverage = lowValues.Count > 0 ? lowValues.Average() : 0.0;
-                var highAverage = highValues.Count > 0 ? highValues.Average() : 0.0;
+                var lowAverage = lowValues.Count > 0 ? Math.Round(lowValues.Average(), 4) : 0.0;
+                var highAverage = highValues.Count > 0 ? Math.Round(highValues.Average(), 4) : 0.0;
                 var volume = volumeValues.Sum();
                 
                 return new DaySummary(
