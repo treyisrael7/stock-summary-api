@@ -8,6 +8,16 @@ builder.Services.AddHttpClient<YahooFinanceClient>();
 
 var app = builder.Build();
 
+app.MapGet("/", () => new
+{
+    message = "Stock Summary API",
+    endpoints = new[]
+    {
+        "GET /api/summary/{symbol} - Get stock summary (hardcoded for now)",
+        "GET /api/raw/{symbol} - Get raw Yahoo Finance data"
+    }
+});
+
 app.MapGet("/api/summary/{symbol}", (string symbol) =>
 {
     var summary = new DaySummary[]
