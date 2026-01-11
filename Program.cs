@@ -20,9 +20,21 @@ app.MapGet("/", () => new
 
 app.MapGet("/api/summary/{symbol}", async (string symbol, YahooFinanceClient client) =>
 {
+    // Validate symbol input
+    var trimmedSymbol = symbol?.Trim() ?? string.Empty;
+    if (string.IsNullOrEmpty(trimmedSymbol))
+    {
+        return Results.BadRequest(new { error = "Symbol cannot be empty" });
+    }
+    
+    if (trimmedSymbol.Contains(' '))
+    {
+        return Results.BadRequest(new { error = "Symbol cannot contain spaces" });
+    }
+    
     try
     {
-        var intradayPoints = await client.GetIntradayPointsAsync(symbol);
+        var intradayPoints = await client.GetIntradayPointsAsync(trimmedSymbol);
         
         var daySummaries = intradayPoints
             .GroupBy(p => p.Time.Date)
@@ -48,6 +60,14 @@ app.MapGet("/api/summary/{symbol}", async (string symbol, YahooFinanceClient cli
         
         return Results.Ok(daySummaries);
     }
+    catch (InvalidOperationException ex) when (ex.Message == "Symbol not found")
+    {
+        return Results.NotFound(new { error = "Symbol not found" });
+    }
+    catch (HttpRequestException)
+    {
+        return Results.Json(new { error = "Upstream service error" }, statusCode: 502);
+    }
     catch (Exception ex)
     {
         return Results.Problem($"Error processing data: {ex.Message}");
@@ -56,10 +76,26 @@ app.MapGet("/api/summary/{symbol}", async (string symbol, YahooFinanceClient cli
 
 app.MapGet("/api/raw/{symbol}", async (string symbol, YahooFinanceClient client) =>
 {
+    // Validate symbol input
+    var trimmedSymbol = symbol?.Trim() ?? string.Empty;
+    if (string.IsNullOrEmpty(trimmedSymbol))
+    {
+        return Results.BadRequest(new { error = "Symbol cannot be empty" });
+    }
+    
+    if (trimmedSymbol.Contains(' '))
+    {
+        return Results.BadRequest(new { error = "Symbol cannot contain spaces" });
+    }
+    
     try
     {
-        var jsonDocument = await client.GetChartDataAsync(symbol);
+        var jsonDocument = await client.GetChartDataAsync(trimmedSymbol);
         return Results.Ok(jsonDocument);
+    }
+    catch (HttpRequestException)
+    {
+        return Results.Json(new { error = "Upstream service error" }, statusCode: 502);
     }
     catch (Exception ex)
     {

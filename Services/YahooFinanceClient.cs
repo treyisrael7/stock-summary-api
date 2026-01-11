@@ -20,7 +20,11 @@ public class YahooFinanceClient
     {
         var url = $"{BaseUrl}/{symbol}?range=1mo&interval=15m";
         var response = await _httpClient.GetAsync(url, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Yahoo Finance API returned status code: {(int)response.StatusCode}");
+        }
         
         var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonDocument.Parse(jsonString);
@@ -36,14 +40,14 @@ public class YahooFinanceClient
     {
         var root = jsonDocument.RootElement;
         if (!TryGetFirstResult(root, out var firstResult))
-            return new List<IntradayPoint>();
+            throw new InvalidOperationException("Symbol not found");
 
         var timestamps = GetArray(firstResult, "timestamp");
         if (timestamps.Count == 0)
-            return new List<IntradayPoint>();
+            throw new InvalidOperationException("Symbol not found");
 
         if (!TryGetQuote(firstResult, out var quote))
-            return new List<IntradayPoint>();
+            throw new InvalidOperationException("Symbol not found");
 
         var lowValues = GetArray(quote, "low");
         var highValues = GetArray(quote, "high");
